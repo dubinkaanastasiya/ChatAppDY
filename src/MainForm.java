@@ -6,24 +6,45 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 public class MainForm extends JFrame {
-    // thread for receiving message
-    private class Receiver extends Thread {
+    private class receivingMessage extends Thread {
         @Override
-        public void start() {
+        public synchronized void start() {
             try {
                 DatagramSocket receiveSocket = new DatagramSocket(PORT);
                 while (true) {
-                    // receiving message
                     DatagramPacket receivePacket = new DatagramPacket(new byte[1024], 1024);
                     receiveSocket.receive(receivePacket);
-                    historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + new String(receivePacket.getData()).trim());
+                    String message = new String(receivePacket.getData()).trim();
+
+                    if (message.substring(0, message.indexOf("r") + 1).equals("ChatApp 2015 user")) {
+                        if (JOptionPane.showConfirmDialog(null, "Do you want to chat with " + message.substring(message.indexOf("r") + 2) + "?") == JOptionPane.YES_OPTION) {
+                            remoteLoginTextField.setText(message.substring(message.indexOf("r") + 2));
+
+                            if (historyTextPane.getText().isEmpty()) {
+                                historyTextPane.setText(message.substring(message.indexOf("r") + 2) + " connected");
+                            } else {
+                                historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + message.substring(message.indexOf("r") + 2) + " connected");
+                            }
+                        } else {
+                            return;
+                        }
+                        message = null;
+                    }
+                    if (message != null) {
+                        if (historyTextPane.getText().isEmpty()) {
+                            historyTextPane.setText(message);
+                        } else {
+                            historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + message);
+                        }
+                    }
                 }
             } catch (Exception ex) {
-                System.out.println("Can't create receiving socket");
+                ex.printStackTrace();
             }
         }
     }
-    static int PORT = 28411;
+
+    private static final int PORT = 28411;
     private JPanel allPanel;
     private JTextField loginTextField;
     private JLabel loginLabel;
@@ -41,13 +62,12 @@ public class MainForm extends JFrame {
     private JScrollPane historyScrollPane;
     private JPanel southPanel;
     private JPanel northPanel;
+    private JButton clearButton;
     private JComboBox participantsComboBox;
     private JLabel participantsLabel;
-    private String old_login;
-    private boolean need_change;
 
     public MainForm() {
-        super("ChatAppDY v0.2");
+        super("Dub & Yak beta");
         setContentPane(allPanel);
         pack();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -56,75 +76,67 @@ public class MainForm extends JFrame {
 
         sendButton.addActionListener(e -> {
             if (loginTextField.isEnabled()) {
-                JOptionPane.showMessageDialog(null, "Please, enter login.");
+                JOptionPane.showMessageDialog(null, "Enter login");
             } else if (remoteIPTextField.isEnabled()) {
-                JOptionPane.showMessageDialog(null, "Please, enter IP.");
+                JOptionPane.showMessageDialog(null, "Enter address");
             } else {
                 if (!messageTextField.getText().isEmpty()) {
-                    if (historyTextPane.getText().isEmpty()) {
-                        historyTextPane.setText(loginTextField.getText() + ": " + messageTextField.getText().trim());
-                    } else {
-                        historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + loginTextField.getText() + ": " + messageTextField.getText().trim());
+                    try {
+                        sendMessage();
+                    } catch (Exception ex) {
+                        System.out.println("Can't send message");
                     }
-                    messageTextField.setText(null);
-                }
-                try {
-                    String sentence = messageTextField.getText();
-                    messageTextField.setText(null);
-                    DatagramSocket sendSocket = new DatagramSocket();
-                    InetAddress IP = InetAddress.getByName("192.168.0.103");
-                    DatagramPacket sendPacket = new DatagramPacket(sentence.getBytes(), sentence.getBytes().length, IP, PORT);
-                    sendSocket.send(sendPacket);
-                    historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + sentence);
-                } catch (Exception ex) {
-                    ex.printStackTrace();
                 }
             }
         });
+
         OKButton.addActionListener(e -> {
             loginTextField.setText(loginTextField.getText().trim());
 
-            if (loginTextField.getText().isEmpty()) {
-                JOptionPane.showMessageDialog(null, "Please, enter login.");
-            } else {
+            if (!loginTextField.getText().isEmpty()) {
                 if (loginTextField.getText().length() > 10) {
-                    loginTextField.setText(loginTextField.getText().substring(0, 10));
-                }
-                if (OKButton.getText().equals("Change")) {
-                    loginTextField.setEnabled(true);
-                    OKButton.setText("OK");
+                    JOptionPane.showMessageDialog(null, "You can enter only 10 characters");
                 } else {
-                    if (need_change) {
-                        historyTextPane.setText(historyTextPane.getText().replaceAll(old_login, loginTextField.getText()));
-                    }
-
-                    old_login = loginTextField.getText();
-                    need_change = true;
                     loginTextField.setEnabled(false);
-                    OKButton.setText("Change");
+                    OKButton.setEnabled(false);
                 }
             }
         });
+
         connectButton.addActionListener(e -> {
             if (loginTextField.isEnabled()) {
-                JOptionPane.showMessageDialog(null, "Please, enter login.");
+                JOptionPane.showMessageDialog(null, "Enter login");
             } else {
                 remoteIPTextField.setText(remoteIPTextField.getText().trim());
 
                 if (remoteIPTextField.getText().isEmpty()) {
-                    JOptionPane.showMessageDialog(null, "Please, enter IP.");
+                    JOptionPane.showMessageDialog(null, "Enter address");
                 } else {
                     remoteIPTextField.setEnabled(false);
                     connectButton.setEnabled(false);
                     disconnectButton.setEnabled(true);
                 }
+                try {
+                    DatagramSocket sendSocket = new DatagramSocket();
+                    InetAddress IP = InetAddress.getByName(remoteIPTextField.getText());
+                    String message = "ChatApp 2015 user " + loginTextField.getText();
+                    byte[] sendData = message.getBytes("UTF-8");
+                    DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, PORT);
+                    sendSocket.send(sendPacket);
+                } catch (Exception ex) {
+                    JOptionPane.showMessageDialog(null, "Can't connect to this user");
+                }
             }
         });
+
         disconnectButton.addActionListener(e -> {
-            remoteIPTextField.setEnabled(true);
             disconnectButton.setEnabled(false);
+            remoteIPTextField.setEnabled(true);
             connectButton.setEnabled(true);
+            OKButton.setEnabled(true);
+            loginTextField.setEnabled(true);
         });
+
         messageTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -133,6 +145,7 @@ public class MainForm extends JFrame {
                 }
             }
         });
+
         loginTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -141,6 +154,7 @@ public class MainForm extends JFrame {
                 }
             }
         });
+
         remoteIPTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -150,15 +164,33 @@ public class MainForm extends JFrame {
             }
         });
     }
-    public void TS() {
-        new Receiver().start();
+
+    private void startThread() {
+        new receivingMessage().start();
     }
+
+    private void sendMessage() throws Exception {
+        DatagramSocket sendSocket = new DatagramSocket();
+        InetAddress IP = InetAddress.getByName(remoteIPTextField.getText());
+        String message = loginTextField.getText() + ": " + messageTextField.getText();
+        byte[] sendData = message.getBytes("UTF-8");
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, PORT);
+        sendSocket.send(sendPacket);
+
+        if (historyTextPane.getText().isEmpty()) {
+            historyTextPane.setText(loginTextField.getText() + ": " + messageTextField.getText());
+        } else {
+            historyTextPane.setText(historyTextPane.getText() + System.lineSeparator() + loginTextField.getText() + ": " + messageTextField.getText());
+        }
+        messageTextField.setText(null);
+    }
+
     public static void main(String[] args) {
         try {
             javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch(Exception ex) {
-            System.out.println("Can't apply new style for application");
+            System.out.println("Error applying new style");
         }
-        new MainForm().TS();
+        new MainForm().startThread();
     }
 }
