@@ -1,100 +1,55 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.PrintWriter;
-import java.net.Socket;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
-public class Connection {
-    private BufferedReader in;
-    private PrintWriter out;
-    private Socket s;
-    private NickCommand nc = new NickCommand("", false);
+class Connection {
+    void sendCommand(MainForm f, String message, boolean isConnectRequest) throws Exception {
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
+        DatagramSocket sendSocket = new DatagramSocket();
+        InetAddress IP = InetAddress.getByName(f.getRemoteIPTextField().getText());
 
-    public Connection(Socket s)
-    {
-        this.s = s;
-        try {
-            in = new BufferedReader(new InputStreamReader(s.getInputStream()));
-            out = new PrintWriter(s.getOutputStream(), true);
-        } catch (IOException e) {
-            e.printStackTrace();
-            close();
-        }
-    }
-
-    public void accept()
-    {
-        out.println("Accepted");
-    }
-
-    public void close()
-    {
-        close();
-    }
-
-    public void disconnect() {
-        out.println("Disconnected");
-        close();
-    }
-
-    public boolean isOpen() {
-        if (s != null) {
-            return true;
-        }
-        return false;
-    }
-
-    public Command receive() throws IOException {
-        String s = in.readLine();
-
-        if (s.equals("Accepted"))
-            return new AcceptCommand();
-        if (s.equals("Disconnected"))
-            return new DisconnectCommand();
-        if (s.equals("Message")) {
-            String message = in.readLine();
-            return new MessageCommand(message);
-        }
-        if (s.substring(0, 18).equals("ChatApp 2015 user ")) {
-            String nick = s.substring(18);
-            boolean busy;
-            if (s.substring(s.length()-1-4, s.length()-1).equals("busy"))
-                busy = true;
-            else
-                busy = false;
-            return new NickCommand(nick, busy);
-        }
+        String text;
+        if (isConnectRequest)
+            text = "ChatApp 2015 user " + f.getLoginTextField().getText() + " from IP " + IP.getHostAddress();
         else
-            return new RejectCommand();
-    }
+            text = "Message [" + formatter.format(new Date()) + "] " + f.getLoginTextField().getText() + ": " + message + System.lineSeparator();
 
-    public void reject()
-    {
-        out.println("Rejected");
-        close();
-    }
+        byte[] sendData = text.getBytes("UTF-8");
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, MainForm.port);
+        sendSocket.send(sendPacket);
 
-    public void sendMessage(String msg)
-    {
-        out.println("Message");
-        out.println(msg);
-    }
-
-    public void sendNickBusy(String nick)
-    {
-        if (isOpen()) {
-            out.println("ChatApp 2015 user " + nick + " busy");
+        if (!isConnectRequest) {
+            if (f.getHistoryTextPane().getText().isEmpty())
+                f.getHistoryTextPane().setText(text.substring(8));
+            else
+                f.getHistoryTextPane().setText(f.getHistoryTextPane().getText() + System.lineSeparator() + text.substring(8));
         }
+
+        f.getMessageTextField().setText(null);
+        f.getHistoryTextPane().setCaretPosition(f.getHistoryTextPane().getDocument().getLength());
     }
 
-    public void sendNickHello(String nick)
-    {
-        if (s != null) {
-            out.println("ChatApp 2015 user " + nick);
+    Command receiveCommand(DatagramSocket socket) {
+        String command = null;
+
+        try {
+            DatagramPacket receivePacket = new DatagramPacket(new byte[1024], 1024);
+            socket.receive(receivePacket);
+            command = new String(receivePacket.getData()).trim();
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
-    }
 
-
-    public static void main(String[] args) {
+        if (command != null) {
+            if (command.substring(0, 17).equals("ChatApp 2015 user")) {
+                return new NickCommand(command.substring(18, command.indexOf(" ", 18)));
+            } else if (command.substring(0, 7).equals("Message")) {
+                return new MessageCommand(command.substring(8));
+            }
+        }
+        return null;
     }
 }
