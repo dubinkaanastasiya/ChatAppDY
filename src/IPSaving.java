@@ -69,12 +69,4 @@ public class IPSaving {
     {
         return IP;
     }
-
-    public static void main(String args[]) throws IOException
-    {
-        writeData("Nastya", "192.168.1.2");
-        writeData("Artem", "123456789");
-        System.out.println(isSaved("Artem"));
-        System.out.println(IP);
-    }
 }
