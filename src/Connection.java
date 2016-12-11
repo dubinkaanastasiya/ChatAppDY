@@ -6,22 +6,26 @@ import java.util.Date;
 import java.util.Locale;
 
 class Connection {
-    void sendCommand(MainForm f, String message, boolean isConnectRequest) throws Exception {
+    void sendCommand(MainForm f, String message, int messageType) throws Exception {
         SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
         DatagramSocket sendSocket = new DatagramSocket();
         InetAddress IP = InetAddress.getByName(f.getRemoteIPTextField().getText());
 
-        String text;
-        if (isConnectRequest)
-            text = "ChatApp 2015 user " + f.getLoginTextField().getText() + " from IP " + IP.getHostAddress();
-        else
-            text = "Message [" + formatter.format(new Date()) + "] " + f.getLoginTextField().getText() + ": " + message + System.lineSeparator();
+        String text = message;
+        switch (messageType) {
+            case 1:
+                text = "ChatApp 2015 user " + f.getLoginTextField().getText() + " from IP " + InetAddress.getLocalHost().getHostAddress();
+                break;
+            case 2:
+                text = "Message [" + formatter.format(new Date()) + "] " + f.getLoginTextField().getText() + ": " + message + System.lineSeparator();
+                break;
+        }
 
         byte[] sendData = text.getBytes("UTF-8");
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, MainForm.port);
         sendSocket.send(sendPacket);
 
-        if (!isConnectRequest) {
+        if (messageType == 2) {
             if (f.getHistoryTextPane().getText().isEmpty())
                 f.getHistoryTextPane().setText(text.substring(8));
             else
@@ -44,11 +48,18 @@ class Connection {
         }
 
         if (command != null) {
-            if (command.substring(0, 17).equals("ChatApp 2015 user")) {
-                return new NickCommand(command.substring(18, command.indexOf(" ", 18)));
-            } else if (command.substring(0, 7).equals("Message")) {
-                return new MessageCommand(command.substring(8));
-            }
+            if (command.length() > 16)
+                if (command.substring(0, 17).equals("ChatApp 2015 user"))
+                    return new NickCommand(command.substring(18));
+            if (command.length() > 6)
+                if (command.substring(0, 7).equals("Message"))
+                    return new MessageCommand(command.substring(8));
+            if (command.equals("Reject"))
+                return new RejectCommand();
+            if (command.contains("accepted your request for a connection"))
+                return new AcceptCommand();
+            if (command.equals("Disconnect"))
+                return new DisconnectCommand();
         }
         return null;
     }

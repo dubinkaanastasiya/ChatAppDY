@@ -1,13 +1,9 @@
-public abstract class Command
-{
-}
+abstract class Command {}
 
-class MessageCommand extends Command
-{
+class MessageCommand extends Command {
     String message;
 
-    MessageCommand(String message)
-    {
+    MessageCommand(String message) {
         this.message = message;
     }
 }
@@ -15,8 +11,13 @@ class MessageCommand extends Command
 class NickCommand extends Command {
     String nick;
 
-    NickCommand(String nick)
-    {
+    NickCommand(String nick) {
         this.nick = nick;
     }
 }
+
+class RejectCommand extends Command {}
+
+class AcceptCommand extends Command{}
+
+class DisconnectCommand extends Command{}
