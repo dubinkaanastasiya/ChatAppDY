@@ -61,8 +61,8 @@
               </grid>
             </constraints>
             <properties>
-              <editable value="false"/>
-              <enabled value="false"/>
+              <editable value="true"/>
+              <enabled value="true"/>
               <font name="Verdana" size="12" style="1"/>
               <text value=""/>
             </properties>
@@ -151,7 +151,8 @@
                   </grid>
                 </constraints>
                 <properties>
-                  <font name="Verdana" size="12" style="1"/>
+                  <font name="Calibri" size="14"/>
+                  <text value="Write a message..."/>
                 </properties>
               </component>
             </children>
