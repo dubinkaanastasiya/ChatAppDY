@@ -16,6 +16,7 @@ public class IPSaving {
 
     public static boolean isSaved(String RemoteLogin)
     {
+        boolean flag=false;
         try
         {
             BufferedReader in=new BufferedReader(new FileReader("IP.txt"));
@@ -28,11 +29,12 @@ public class IPSaving {
                 if (line.substring(0, RemoteLogin.length()+1).equals(RemoteLogin+" "))
                 {
                     IP = line.substring(RemoteLogin.length() + 1);
-                    return true;
+                    flag=true;
+                    break;
                 }
                 else
                 {
-                    return false;
+                    flag=false;
                 }
             }
             in.close();
@@ -41,7 +43,7 @@ public class IPSaving {
         {
             e.printStackTrace();
         }
-        return false;
+        return flag;
     }
 
     public static boolean isAble(String RemoteLogin, String RemoteIP)
@@ -66,5 +68,13 @@ public class IPSaving {
     public static String getIP()
     {
         return IP;
+    }
+
+    public static void main(String args[]) throws IOException
+    {
+        writeData("Nastya", "192.168.1.2");
+        writeData("Artem", "123456789");
+        System.out.println(isSaved("Artem"));
+        System.out.println(IP);
     }
 }
