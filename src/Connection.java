@@ -7,60 +7,60 @@ import java.util.Locale;
 
 class Connection {
     void sendCommand(MainForm f, String message, int messageType) throws Exception {
-        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm:ss", Locale.ENGLISH);
+        SimpleDateFormat formatter = new SimpleDateFormat("HH:mm", Locale.ENGLISH);
         DatagramSocket sendSocket = new DatagramSocket();
-        InetAddress IP = InetAddress.getByName(f.getRemoteIPTextField().getText());
+        InetAddress IP = InetAddress.getByName(f.remoteIPTextField.getText());
 
-        String text = message;
-        switch (messageType) {
-            case 1:
-                text = "ChatApp 2015 user " + f.getLoginTextField().getText() + " from IP " + InetAddress.getLocalHost().getHostAddress();
-                break;
-            case 2:
-                text = "Message [" + formatter.format(new Date()) + "] " + f.getLoginTextField().getText() + ": " + message + System.lineSeparator();
-                break;
-        }
+        String s = message;
+        if (messageType == 1)
+            s = "ChatApp 2015 user " + f.loginTextField.getText() + " from IP " + InetAddress.getLocalHost().getHostAddress();
+        else if (messageType == 2)
+            s = "Message " + f.loginTextField.getText() + " [" + formatter.format(new Date()) + "]\n" + message.trim();
 
-        byte[] sendData = text.getBytes("UTF-8");
-        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, MainForm.port);
+        byte[] sendData = s.getBytes("Cp1251");
+        DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, MainForm.PORT);
         sendSocket.send(sendPacket);
 
         if (messageType == 2) {
-            if (f.getHistoryTextPane().getText().isEmpty())
-                f.getHistoryTextPane().setText(text.substring(8));
+            if (f.historyTextPane.getText().isEmpty())
+                f.historyTextPane.setText(s.substring(8));
             else
-                f.getHistoryTextPane().setText(f.getHistoryTextPane().getText() + System.lineSeparator() + text.substring(8));
+                f.historyTextPane.setText(f.historyTextPane.getText() + "\n" + s.substring(8));
         }
-
-        f.getMessageTextField().setText(null);
-        f.getHistoryTextPane().setCaretPosition(f.getHistoryTextPane().getDocument().getLength());
+        f.messageTextField.setText(null);
+        f.toEndOfPane();
     }
 
     Command receiveCommand(DatagramSocket socket) {
-        String command = null;
-
+        String command;
         try {
             DatagramPacket receivePacket = new DatagramPacket(new byte[1024], 1024);
             socket.receive(receivePacket);
             command = new String(receivePacket.getData()).trim();
         } catch (Exception ex) {
             ex.printStackTrace();
+            return null;
         }
 
-        if (command != null) {
-            if (command.length() > 16)
-                if (command.substring(0, 17).equals("ChatApp 2015 user"))
-                    return new NickCommand(command.substring(18));
-            if (command.length() > 6)
-                if (command.substring(0, 7).equals("Message"))
-                    return new MessageCommand(command.substring(8));
-            if (command.equals("Reject"))
-                return new RejectCommand();
-            if (command.contains("accepted your request for a connection"))
-                return new AcceptCommand();
-            if (command.equals("Disconnect"))
-                return new DisconnectCommand();
-        }
+        if (command.length() > 16)
+            if (command.substring(0, 17).equals("ChatApp 2015 user"))
+                return new RequestCommand(command.substring(18, command.indexOf("from") - 1),
+                        command.substring(command.indexOf("IP") + 3));
+        if (command.length() > 6)
+            if (command.substring(0, 7).equals("Message"))
+                return new MessageCommand(command.substring(8));
+        if (command.contains("rejected"))
+            return new RejectCommand(command.substring(5, command.indexOf("from") - 1),
+                    command.substring(command.indexOf("IP") + 3, command.indexOf("rejected") - 1));
+        if (command.contains("accepted"))
+            return new AcceptCommand(command.substring(5, command.indexOf("from") - 1),
+                    command.substring(command.indexOf("IP") + 3, command.indexOf("accepted") - 1));
+        if (command.contains("disconnected"))
+            return new DisconnectCommand(command.substring(5, command.indexOf("from") - 1),
+                    command.substring(command.indexOf("IP") + 3, command.indexOf("disconnected") - 1));
+        if (command.contains("busy"))
+            return new BusyCommand(command.substring(5, command.indexOf("from") - 1),
+                    command.substring(command.indexOf("IP") + 3, command.indexOf("busy") - 1));
         return null;
     }
 }

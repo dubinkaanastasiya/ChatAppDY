@@ -8,16 +8,47 @@ class MessageCommand extends Command {
     }
 }
 
-class NickCommand extends Command {
-    String nick;
+class RequestCommand extends Command {
+    String nick, IP;
 
-    NickCommand(String nick) {
+    RequestCommand(String nick, String IP) {
         this.nick = nick;
+        this.IP = IP;
     }
 }
 
-class RejectCommand extends Command {}
+class RejectCommand extends Command {
+    String nick, IP;
 
-class AcceptCommand extends Command{}
+    RejectCommand(String nick, String IP) {
+        this.nick = nick;
+        this.IP = IP;
+    }
+}
 
-class DisconnectCommand extends Command{}
+class AcceptCommand extends Command {
+    String nick, IP;
+
+    AcceptCommand(String nick, String IP) {
+        this.nick = nick;
+        this.IP = IP;
+    }
+}
+
+class DisconnectCommand extends Command {
+    String nick, IP;
+
+    DisconnectCommand(String nick, String IP) {
+        this.nick = nick;
+        this.IP = IP;
+    }
+}
+
+class BusyCommand extends Command {
+    String nick, IP;
+
+    BusyCommand(String nick, String IP) {
+        this.nick = nick;
+        this.IP = IP;
+    }
+}
