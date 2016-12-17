@@ -35,6 +35,7 @@
             </constraints>
             <properties>
               <horizontalAlignment value="0"/>
+              <labelFor value="ee06e"/>
               <text value="Login"/>
             </properties>
           </component>
@@ -43,6 +44,7 @@
               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="4" use-parent-layout="false"/>
             </constraints>
             <properties>
+              <labelFor value="b6544"/>
               <text value="Remote Login"/>
             </properties>
           </component>
@@ -62,7 +64,7 @@
             </constraints>
             <properties>
               <editable value="true"/>
-              <enabled value="true"/>
+              <enabled value="false"/>
               <font name="Verdana" size="12" style="1"/>
               <text value=""/>
             </properties>
@@ -73,7 +75,9 @@
                 <preferred-size width="150" height="-1"/>
               </grid>
             </constraints>
-            <properties/>
+            <properties>
+              <enabled value="false"/>
+            </properties>
           </component>
           <hspacer id="688f0">
             <constraints>
@@ -94,6 +98,7 @@
               <grid row="1" column="5" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="1" use-parent-layout="false"/>
             </constraints>
             <properties>
+              <enabled value="true"/>
               <text value="Connect"/>
             </properties>
           </component>
@@ -151,8 +156,8 @@
                   </grid>
                 </constraints>
                 <properties>
-                  <font name="Calibri" size="14"/>
-                  <text value="Write a message..."/>
+                  <font name="Verdana" size="12"/>
+                  <text value="Enter a message..."/>
                 </properties>
               </component>
             </children>

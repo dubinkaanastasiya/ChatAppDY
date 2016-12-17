@@ -1,12 +1,11 @@
 import java.io.*;
 
 class IPSaving {
-    static String IP;
+    private static String IP;
 
-    static void writeData(String RemoteLogin, String RemoteIP) throws IOException
-    {
+    static void writeData(String remoteLogin, String remoteIP) throws Exception {
         PrintWriter out = new PrintWriter(new FileWriter("IP.txt", true));
-        String s = RemoteLogin + " " + RemoteIP;
+        String s = remoteLogin + " " + remoteIP;
         out.println(s);
         out.close();
     }
@@ -15,36 +14,34 @@ class IPSaving {
         boolean flag = false;
         try {
             BufferedReader in = new BufferedReader(new FileReader("IP.txt"));
-            String line;
-
             while (true) {
-                line = in.readLine();
+                String line = in.readLine();
                 if (line == null)
                     break;
-                if (line.length()<RemoteLogin.length()) break;
-                if (line.substring(0, RemoteLogin.length()+1).equals(RemoteLogin + " "))
-                {
+
+                if (line.length() < RemoteLogin.length())
+                    break;
+
+                if (line.substring(0, RemoteLogin.length() + 1).equals(RemoteLogin + " ")) {
                     IP = line.substring(RemoteLogin.length() + 1);
                     flag = true;
                     break;
-                }
-                else
+                } else
                     flag = false;
             }
             in.close();
         }
-        catch (IOException e) {
-            e.printStackTrace();
+        catch (IOException ex) {
+            ex.printStackTrace();
         }
         return flag;
     }
 
-    static boolean isAble(String remoteLogin, String remoteIP) {
-        return !isSaved(remoteLogin) || remoteIP.equals(IP);
+    static boolean isAble(String myLogin, String myIP) {
+        return !isSaved(myLogin) || myIP.equals(IP);
     }
 
-    static String getIP()
-    {
+    static String getIP() {
         return IP;
     }
 }

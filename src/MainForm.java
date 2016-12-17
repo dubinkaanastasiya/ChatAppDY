@@ -1,36 +1,34 @@
-import com.sun.scenario.effect.impl.sw.sse.SSEBlend_SRC_OUTPeer;
-
 import javax.swing.*;
 import java.awt.event.*;
 import java.io.File;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 
 public class MainForm extends JFrame {
     private static int choice = -1;
-    static final int port = 28411;
+    static final int PORT = 28411;
     private JPanel allPanel;
-    private JTextField loginTextField;
+    JTextField loginTextField;
     JLabel loginLabel;
     private JButton OKButton;
     JLabel remoteLoginLabel;
     JLabel remoteIPLabel;
     private JTextField remoteLoginTextField;
-    private JTextField remoteIPTextField;
+    JTextField remoteIPTextField;
     private JButton disconnectButton;
     private JButton connectButton;
     private JButton sendButton;
     JPanel centerPanel;
-    private JTextPane historyTextPane;
-    private JTextField messageTextField;
+    JTextPane historyTextPane;
+    JTextField messageTextField;
     JScrollPane historyScrollPane;
     JPanel southPanel;
     JPanel northPanel;
-    private JButton changeButton;
+    JButton changeButton;
+    private static Connection connection;
     private static Receiver receiver;
 
     private MainForm() {
-        super("Elegant Chat");
+        super("Almost Big Daddy");
         setContentPane(allPanel);
         pack();
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -39,9 +37,8 @@ public class MainForm extends JFrame {
 
         File file = new File("IP.txt");
         try {
-            if(!file.exists()) {
+            if (!file.exists())
                 file.createNewFile();
-            }
         } catch(Exception ex) {
             ex.printStackTrace();
         }
@@ -50,12 +47,9 @@ public class MainForm extends JFrame {
             @Override
             public void windowClosing(WindowEvent e) {
                 if (disconnectButton.isEnabled()) {
-                    Object[] options = { "Yes", "No" };
-                    choice = JOptionPane.showOptionDialog(e.getWindow(), "Are you sure you want to leave the\n" +
-                                    "current chat and close the program?",
-                            "Confirm", JOptionPane.YES_NO_OPTION,
-                            JOptionPane.QUESTION_MESSAGE, null, options,
-                            options[0]);
+                    choice = optionUserMessage("Are you sure you want to leave the\n" +
+                            "current chat and close the program?");
+
                     if (choice == 0) {
                         disconnectButton.doClick();
                         e.getWindow().setVisible(false);
@@ -74,94 +68,93 @@ public class MainForm extends JFrame {
             public void windowActivated(WindowEvent e) {}
             public void windowDeactivated(WindowEvent e) {}
         });
-
         sendButton.addActionListener(e -> {
             if (!loginTextField.isEnabled() && !remoteIPTextField.isEnabled()) {
                 if (!messageTextField.getText().isEmpty()) {
                     try {
-                        new Connection().sendCommand(this, messageTextField.getText(), 2);
+                        connection.sendCommand(this, messageTextField.getText(), 2);
                     } catch (Exception ex) {
-                        System.out.println("Can't send message");
+                        ex.printStackTrace();
                     }
                 }
             } else if (loginTextField.isEnabled() || remoteIPTextField.isEnabled())
                 messageTextField.setText(null);
         });
-
         OKButton.addActionListener(e -> {
-            String myLANIP;
-            InetAddress addr=null;
-            try {
-                addr = InetAddress.getLocalHost();
+            loginTextField.setText(loginTextField.getText().trim());
+
+            if (!loginTextField.getText().isEmpty()) {
+                remoteIPTextField.setEnabled(true);
+                remoteLoginTextField.setEnabled(true);
             }
-            catch (UnknownHostException ex)
-            {
+
+            String myIP = null;
+            InetAddress address;
+
+            try {
+                address = InetAddress.getLocalHost();
+                myIP = address.getHostAddress();
+            } catch (Exception ex) {
                 ex.printStackTrace();
             }
-            myLANIP = addr.getHostAddress();
 
             if (!loginTextField.getText().isEmpty())
                 if (loginTextField.getText().length() > 10)
-                    JOptionPane.showMessageDialog(null, "You can enter only 10 characters");
-                else if (!IPSaving.isAble(loginTextField.getText(), myLANIP))
-                        JOptionPane.showMessageDialog(null, "Enter another login");
-                    else
-                        LoginVsIP();
-        });
+                    userMessage("You can enter only 10 characters");
+                else if (!IPSaving.isAble(loginTextField.getText(), myIP))
+                    userMessage("Enter another login");
+                else {
+                    loginTextField.setEnabled(false);
+                    OKButton.setEnabled(false);
+                    changeButton.setEnabled(true);
+                    connectButton.setEnabled(true);
 
+                    if (Receiver.pause) {
+                        synchronized (receiver) {
+                            receiver.notify();
+                        }
+                        Receiver.pause = false;
+                    }
+                }
+        });
         connectButton.addActionListener(e -> {
             if (!loginTextField.isEnabled()) {
                 remoteLoginTextField.setText(remoteLoginTextField.getText().trim());
                 remoteIPTextField.setText(remoteIPTextField.getText().trim());
 
-                if (!IPSaving.isSaved(remoteLoginTextField.getText()) && (remoteIPTextField.getText().isEmpty())) {
-                    JOptionPane.showMessageDialog(null, "This login isn`t saved, please, enter IP");
-                    remoteLoginTextField.setEditable(false);
-                    remoteLoginTextField.setText("");
-                    remoteIPTextField.setEditable(true);
-                    if (!remoteIPTextField.getText().isEmpty())
-                    {
-                        try {
-                            new Connection().sendCommand(this, null, 1);
-                        } catch (Exception ex) {
-                            JOptionPane.showMessageDialog(this, "Can't connect to this user");
-                        }
-                    }
-                }
-                else
-                {
-                    remoteIPTextField.setText(IPSaving.getIP());
+                if (!IPSaving.isSaved(remoteLoginTextField.getText())) {
+                    if (!remoteLoginTextField.getText().isEmpty())
+                        userMessage("This login isn`t saved, please, enter IP");
 
-                    try {
-                        new Connection().sendCommand(this, null, 1);
-                    } catch (Exception ex) {
-                        JOptionPane.showMessageDialog(this, "Can't connect to this user");
-                    }
+                    remoteLoginTextField.setText(null);
+                    historyTextPane.setText(null);
+                    remoteIPTextField.setEnabled(true);
+
+                    if (!remoteIPTextField.getText().isEmpty())
+                        connectionMessage();
+                } else {
+                    remoteIPTextField.setText(IPSaving.getIP());
+                    connectionMessage();
                 }
             }
         });
-
         disconnectButton.addActionListener(e -> {
             if (choice == 0)
-                additionalDisconnect();
+                additionalDisconnect(false);
             else {
-                Object[] options = { "Yes", "No" };
-                choice = JOptionPane.showOptionDialog(this, "Are you sure you want to\nleave the current chat?",
-                        "Confirm", JOptionPane.YES_NO_OPTION,
-                        JOptionPane.QUESTION_MESSAGE, null, options,
-                        options[0]);
-
+                choice = optionUserMessage("Are you sure you want to\nleave the current chat?");
                 if (choice == 0)
-                    additionalDisconnect();
+                    additionalDisconnect(false);
             }
         });
-
         changeButton.addActionListener(e -> {
             changeButton.setEnabled(false);
             OKButton.setEnabled(true);
             loginTextField.setEnabled(true);
+            remoteIPTextField.setEnabled(false);
+            remoteLoginTextField.setEnabled(false);
+            connectButton.setEnabled(false);
         });
-
         messageTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -169,7 +162,6 @@ public class MainForm extends JFrame {
                     sendButton.doClick();
             }
         });
-
         loginTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -177,7 +169,13 @@ public class MainForm extends JFrame {
                     OKButton.doClick();
             }
         });
-
+        remoteLoginTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.getKeyCode() == KeyEvent.VK_ENTER)
+                    connectButton.doClick();
+            }
+        });
         remoteIPTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
@@ -188,7 +186,7 @@ public class MainForm extends JFrame {
         messageTextField.addFocusListener(new FocusAdapter() {
             @Override
             public void focusGained(FocusEvent e) {
-                if (messageTextField.getText().equals("Write a message..."))
+                if (messageTextField.getText().equals("Enter a message..."))
                     messageTextField.setText(null);
             }
         });
@@ -196,99 +194,143 @@ public class MainForm extends JFrame {
             @Override
             public void focusLost(FocusEvent e) {
                 if (messageTextField.getText().isEmpty())
-                    messageTextField.setText("Write a message...");
+                    messageTextField.setText("Enter a message...");
+            }
+        });
+        remoteLoginTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (remoteLoginTextField.getText().isEmpty())
+                    remoteIPTextField.setEnabled(true);
+                else
+                    remoteIPTextField.setEnabled(false);
+            }
+        });
+        remoteIPTextField.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyReleased(KeyEvent e) {
+                if (remoteIPTextField.getText().isEmpty())
+                    remoteLoginTextField.setEnabled(true);
+                else
+                    remoteLoginTextField.setEnabled(false);
             }
         });
     }
 
-    void LoginVsIP()
-    {
-        Object[] options = { "Login", "IP" };
-        while(choice==-1)
-        {
-        choice = JOptionPane.showOptionDialog(this, "Do you want to enter\n" +
-                        "login or IP to connect?",
-                "Confirm", JOptionPane.YES_NO_OPTION,
-                JOptionPane.QUESTION_MESSAGE, null, options,
-                options[0]);}
-        if (choice == 0) {
-            remoteLoginTextField.setEditable(true);
-            remoteIPTextField.setEditable(false);
-        }
-        else {
-            remoteLoginTextField.setEditable(false);
-            remoteIPTextField.setEditable(true);
-        }
-
-        loginTextField.setEnabled(false);
-        OKButton.setEnabled(false);
-        changeButton.setEnabled(true);
+    private void acceptCommand() {
+        remoteIPTextField.setEnabled(false);
+        connectButton.setEnabled(false);
+        changeButton.setEnabled(false);
+        disconnectButton.setEnabled(true);
     }
 
-    JTextPane getHistoryTextPane() {
-        return historyTextPane;
+    void toEndOfPane() {
+        historyTextPane.setCaretPosition(historyTextPane.getDocument().getLength());
+    }
+    private void userMessage(String message) {
+        JOptionPane.showMessageDialog(this, message);
+    }
+    private int optionUserMessage(String message) {
+        Object[] options = { "Yes", "No" };
+        return JOptionPane.showOptionDialog(this, message, "Confirm", JOptionPane.YES_NO_OPTION,
+                JOptionPane.QUESTION_MESSAGE, null, options, options[0]);
     }
 
-    JTextField getRemoteLoginTextField() {
-        return remoteLoginTextField;
-    }
-
-    JTextField getRemoteIPTextField() {
-        return remoteIPTextField;
-    }
-
-    JTextField getLoginTextField() {
-        return loginTextField;
-    }
-
-    JTextField getMessageTextField() {
-        return messageTextField;
-    }
-
-    JButton getConnectButton() {
-        return connectButton;
-    }
-
-    JButton getDisconnectButton() {
-        return disconnectButton;
-    }
-
-    JButton getChangeButton() {
-        return changeButton;
-    }
-
-    JButton getOKButton(){ return OKButton; }
-
-    /*JButton getOKButton() {
-        return OKButton;
-    }*/
-
-    private void additionalDisconnect() {
+    private void connectionMessage() {
         try {
-            new Connection().sendCommand(this, "Disconnect", 3);
+            connection.sendCommand(this, null, 1);
         } catch (Exception ex) {
-            ex.printStackTrace();
+            userMessage("Can't connect to this user");
         }
+    }
+
+    private void additionalDisconnect(boolean myself) {
+        if (!myself)
+            try {
+                connection.sendCommand(this, "User " + loginTextField.getText() + " from IP " +
+                        InetAddress.getLocalHost().getHostAddress() + " disconnected", 0);
+            } catch (Exception ex) {
+                ex.printStackTrace();
+            }
         disconnectButton.setEnabled(false);
+        connectButton.setEnabled(true);
+        remoteLoginTextField.setEnabled(true);
         remoteIPTextField.setEnabled(true);
         changeButton.setEnabled(true);
         remoteLoginTextField.setText(null);
         remoteIPTextField.setText(null);
-        historyTextPane.setText(null);
     }
 
-    public static void main(String[] args) {
-        try {
-            javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-        } catch(Exception ex) {
-            System.out.println("Error applying new style");
-        }
+    void Request(Command cmd) throws Exception {
+        if (!connectButton.isEnabled()) {
+            String tmp = remoteIPTextField.getText();
+            remoteIPTextField.setText(((RequestCommand) cmd).IP);
+            connection.sendCommand(this, "User " + loginTextField.getText() + " from IP " +
+                    InetAddress.getLocalHost().getHostAddress() + " busy", 0);
+            remoteIPTextField.setText(tmp);
+        } else {
+            int choice = optionUserMessage("Do you want to chat with\n" + ((RequestCommand) cmd).nick +
+                    " from IP " + ((RequestCommand) cmd).IP + "?");
 
-        receiver = new Receiver();
-        try {
-            receiver.run(new MainForm(), new Connection());
-        } catch (Exception ex) {
-            ex.printStackTrace();
+            if (choice == 0) {
+                historyTextPane.setText(null);
+                remoteLoginTextField.setText(((RequestCommand) cmd).nick);
+                remoteIPTextField.setText(((RequestCommand) cmd).IP);
+                connection.sendCommand(this, "User " + loginTextField.getText() + " from IP " +
+                        InetAddress.getLocalHost().getHostAddress() + " accepted your request", 0);
+                remoteLoginTextField.setEnabled(false);
+                acceptCommand();
+
+                if (!IPSaving.isSaved(remoteLoginTextField.getText()))
+                    try {
+                        IPSaving.writeData(remoteLoginTextField.getText(), remoteIPTextField.getText());
+                    } catch (Exception ex) {
+                        ex.printStackTrace();
+                    }
+            } else {
+                remoteIPTextField.setText(((RequestCommand) cmd).IP);
+
+                connection.sendCommand(this, "User " + loginTextField.getText() + " from IP " +
+                        InetAddress.getLocalHost().getHostAddress() + " rejected", 0);
+                additionalDisconnect(true);
+            }
         }
+    }
+
+    void Message(Command cmd) {
+        if (historyTextPane.getText().isEmpty())
+            historyTextPane.setText(((MessageCommand) cmd).message);
+        else
+            historyTextPane.setText(historyTextPane.getText() + "\n" + ((MessageCommand) cmd).message);
+        Sound.playSound().join();
+    }
+
+    void Reject(Command cmd) {
+        userMessage("User " + ((RejectCommand) cmd).nick + " from IP " + ((RejectCommand) cmd).IP + " rejected your request");
+        additionalDisconnect(true);
+    }
+
+    void Accept(Command cmd) {
+        remoteLoginTextField.setText(((AcceptCommand) cmd).nick);
+        remoteIPTextField.setText(((AcceptCommand) cmd).IP);
+        userMessage("User " + ((AcceptCommand) cmd).nick + " from IP " + ((AcceptCommand) cmd).IP + " accepted your request");
+        acceptCommand();
+    }
+
+    void Disconnect(Command cmd) {
+        userMessage("User " + ((DisconnectCommand) cmd).nick + " from IP " + ((DisconnectCommand) cmd).IP + " disconnected");
+        additionalDisconnect(true);
+    }
+
+    void Busy(Command cmd) {
+        userMessage("User " + ((BusyCommand) cmd).nick + " from IP " + ((BusyCommand) cmd).IP + " is busy");
+        additionalDisconnect(true);
+    }
+
+    public static void main(String[] args) throws Exception {
+        javax.swing.UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        connection = new Connection();
+        receiver = new Receiver();
+        receiver.run(new MainForm(), connection);
     }
 }
