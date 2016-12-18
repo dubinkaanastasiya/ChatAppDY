@@ -4,7 +4,7 @@ class Receiver extends Thread {
     static boolean pause = true;
     private static DatagramSocket receiveSocket;
 
-    synchronized void run(MainForm f, Connection c) throws Exception {
+    synchronized void run(MainForm f, Connection c) throws java.lang.Exception {
         while (true) {
             if (pause) {
                 wait();
@@ -25,7 +25,7 @@ class Receiver extends Thread {
             else if (cmd instanceof BusyCommand)
                 f.Busy(cmd);
 
-            f.toEndOfPane();
+            f.toEndOfArea();
         }
     }
 }

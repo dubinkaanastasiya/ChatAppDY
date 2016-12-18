@@ -15,20 +15,20 @@ class Connection {
         if (messageType == 1)
             s = "ChatApp 2015 user " + f.loginTextField.getText() + " from IP " + InetAddress.getLocalHost().getHostAddress();
         else if (messageType == 2)
-            s = "Message " + f.loginTextField.getText() + " [" + formatter.format(new Date()) + "]\n" + message.trim();
+            s = "Message " + f.loginTextField.getText() + " [" + formatter.format(new Date()) + "] " + message.trim().replaceAll("[\\s]{2,}", " ");
 
         byte[] sendData = s.getBytes("Cp1251");
         DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IP, MainForm.PORT);
         sendSocket.send(sendPacket);
 
         if (messageType == 2) {
-            if (f.historyTextPane.getText().isEmpty())
-                f.historyTextPane.setText(s.substring(8));
+            if (f.historyTextArea.getText().isEmpty())
+                f.historyTextArea.setText(s.substring(8));
             else
-                f.historyTextPane.setText(f.historyTextPane.getText() + "\n" + s.substring(8));
+                f.historyTextArea.setText(f.historyTextArea.getText() + "\n" + s.substring(8));
         }
         f.messageTextField.setText(null);
-        f.toEndOfPane();
+        f.toEndOfArea();
     }
 
     Command receiveCommand(DatagramSocket socket) {

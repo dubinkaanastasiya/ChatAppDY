@@ -6,7 +6,7 @@ import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
 
 class Sound {
-    private boolean released, playing;
+    private boolean released;
     private Clip clip;
 
     private Sound(File f) {
@@ -27,21 +27,6 @@ class Sound {
             clip.stop();
             clip.setFramePosition(0);
             clip.start();
-            playing = true;
-        }
-    }
-
-    void join() {
-        if (!released)
-            return;
-
-        synchronized (clip) {
-            try {
-                while (playing)
-                    clip.wait();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
         }
     }
 
@@ -55,7 +40,6 @@ class Sound {
     private class Listener implements LineListener {
         public void update(LineEvent ev) {
             if (ev.getType() == LineEvent.Type.STOP) {
-                playing = false;
                 synchronized (clip) {
                     clip.notify();
                 }

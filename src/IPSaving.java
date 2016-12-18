@@ -3,7 +3,7 @@ import java.io.*;
 class IPSaving {
     private static String IP;
 
-    static void writeData(String remoteLogin, String remoteIP) throws Exception {
+    static void writeData(String remoteLogin, String remoteIP) throws IOException {
         PrintWriter out = new PrintWriter(new FileWriter("IP.txt", true));
         String s = remoteLogin + " " + remoteIP;
         out.println(s);

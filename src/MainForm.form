@@ -35,7 +35,6 @@
             </constraints>
             <properties>
               <horizontalAlignment value="0"/>
-              <labelFor value="ee06e"/>
               <text value="Login"/>
             </properties>
           </component>
@@ -44,7 +43,6 @@
               <grid row="0" column="2" row-span="1" col-span="1" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="4" use-parent-layout="false"/>
             </constraints>
             <properties>
-              <labelFor value="b6544"/>
               <text value="Remote Login"/>
             </properties>
           </component>
@@ -156,28 +154,29 @@
                   </grid>
                 </constraints>
                 <properties>
+                  <background color="-1"/>
                   <font name="Verdana" size="12"/>
-                  <text value="Enter a message..."/>
+                  <text value=""/>
                 </properties>
               </component>
             </children>
           </grid>
-          <scrollpane id="ee06e" binding="historyScrollPane">
+          <scrollpane id="48df5" binding="historyScrollPane">
             <constraints>
               <grid row="0" column="0" row-span="1" col-span="1" vsize-policy="7" hsize-policy="7" anchor="0" fill="3" indent="0" use-parent-layout="false"/>
             </constraints>
             <properties/>
             <border type="none"/>
             <children>
-              <component id="b6544" class="javax.swing.JTextPane" binding="historyTextPane">
+              <component id="5d34d" class="javax.swing.JTextArea" binding="historyTextArea">
                 <constraints/>
                 <properties>
-                  <background color="-1"/>
-                  <contentType value="text/plain"/>
+                  <background color="-328966"/>
+                  <columns value="0"/>
                   <editable value="false"/>
                   <enabled value="true"/>
-                  <minimumSize width="6" height="23"/>
-                  <preferredSize width="6" height="170"/>
+                  <font name="Verdana" size="12"/>
+                  <lineWrap value="true"/>
                 </properties>
               </component>
             </children>

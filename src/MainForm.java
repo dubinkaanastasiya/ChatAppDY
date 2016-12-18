@@ -1,4 +1,5 @@
 import javax.swing.*;
+import javax.swing.text.*;
 import java.awt.event.*;
 import java.io.File;
 import java.net.InetAddress;
@@ -18,22 +19,33 @@ public class MainForm extends JFrame {
     private JButton connectButton;
     private JButton sendButton;
     JPanel centerPanel;
-    JTextPane historyTextPane;
+    JTextArea historyTextArea;
     JTextField messageTextField;
-    JScrollPane historyScrollPane;
     JPanel southPanel;
     JPanel northPanel;
     JButton changeButton;
+    JScrollPane historyScrollPane;
     private static Connection connection;
     private static Receiver receiver;
 
     private MainForm() {
-        super("Almost Big Daddy");
+        super("Big Daddy");
         setContentPane(allPanel);
         pack();
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        setSize(this.getWidth(), this.getHeight() + 200);
         setLocationRelativeTo(null);
         setVisible(true);
+
+        messageTextField.setDocument(new PlainDocument() {
+            @Override
+            public void insertString(int offset, String str, AttributeSet attr) throws BadLocationException {
+                if ((getLength() + str.length()) <= 512)
+                    super.insertString(offset, str, attr);
+                else
+                    userMessage("You can't type more");
+            }
+        });
 
         File file = new File("IP.txt");
         try {
@@ -81,7 +93,7 @@ public class MainForm extends JFrame {
                 messageTextField.setText(null);
         });
         OKButton.addActionListener(e -> {
-            loginTextField.setText(loginTextField.getText().trim());
+            loginTextField.setText(loginTextField.getText().trim().replaceAll("[\\s]{2,}", " "));
 
             if (!loginTextField.getText().isEmpty()) {
                 remoteIPTextField.setEnabled(true);
@@ -119,15 +131,15 @@ public class MainForm extends JFrame {
         });
         connectButton.addActionListener(e -> {
             if (!loginTextField.isEnabled()) {
-                remoteLoginTextField.setText(remoteLoginTextField.getText().trim());
-                remoteIPTextField.setText(remoteIPTextField.getText().trim());
+                remoteLoginTextField.setText(remoteLoginTextField.getText().trim().replaceAll("[\\s]{2,}", " "));
+                remoteIPTextField.setText(remoteIPTextField.getText().trim().replaceAll("[\\s]{2,}", " "));
 
                 if (!IPSaving.isSaved(remoteLoginTextField.getText())) {
                     if (!remoteLoginTextField.getText().isEmpty())
                         userMessage("This login isn`t saved, please, enter IP");
 
                     remoteLoginTextField.setText(null);
-                    historyTextPane.setText(null);
+                    historyTextArea.setText(null);
                     remoteIPTextField.setEnabled(true);
 
                     if (!remoteIPTextField.getText().isEmpty())
@@ -183,20 +195,6 @@ public class MainForm extends JFrame {
                     connectButton.doClick();
             }
         });
-        messageTextField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusGained(FocusEvent e) {
-                if (messageTextField.getText().equals("Enter a message..."))
-                    messageTextField.setText(null);
-            }
-        });
-        messageTextField.addFocusListener(new FocusAdapter() {
-            @Override
-            public void focusLost(FocusEvent e) {
-                if (messageTextField.getText().isEmpty())
-                    messageTextField.setText("Enter a message...");
-            }
-        });
         remoteLoginTextField.addKeyListener(new KeyAdapter() {
             @Override
             public void keyReleased(KeyEvent e) {
@@ -224,8 +222,8 @@ public class MainForm extends JFrame {
         disconnectButton.setEnabled(true);
     }
 
-    void toEndOfPane() {
-        historyTextPane.setCaretPosition(historyTextPane.getDocument().getLength());
+    void toEndOfArea() {
+        historyTextArea.setCaretPosition(historyTextArea.getDocument().getLength());
     }
     private void userMessage(String message) {
         JOptionPane.showMessageDialog(this, message);
@@ -261,7 +259,7 @@ public class MainForm extends JFrame {
         remoteIPTextField.setText(null);
     }
 
-    void Request(Command cmd) throws Exception {
+    void Request(Command cmd) throws java.lang.Exception {
         if (!connectButton.isEnabled()) {
             String tmp = remoteIPTextField.getText();
             remoteIPTextField.setText(((RequestCommand) cmd).IP);
@@ -273,7 +271,7 @@ public class MainForm extends JFrame {
                     " from IP " + ((RequestCommand) cmd).IP + "?");
 
             if (choice == 0) {
-                historyTextPane.setText(null);
+                historyTextArea.setText(null);
                 remoteLoginTextField.setText(((RequestCommand) cmd).nick);
                 remoteIPTextField.setText(((RequestCommand) cmd).IP);
                 connection.sendCommand(this, "User " + loginTextField.getText() + " from IP " +
@@ -298,11 +296,11 @@ public class MainForm extends JFrame {
     }
 
     void Message(Command cmd) {
-        if (historyTextPane.getText().isEmpty())
-            historyTextPane.setText(((MessageCommand) cmd).message);
+        if (historyTextArea.getText().isEmpty())
+            historyTextArea.setText(((MessageCommand) cmd).message);
         else
-            historyTextPane.setText(historyTextPane.getText() + "\n" + ((MessageCommand) cmd).message);
-        Sound.playSound().join();
+            historyTextArea.setText(historyTextArea.getText() + "\n" + ((MessageCommand) cmd).message);
+        Sound.playSound();
     }
 
     void Reject(Command cmd) {
